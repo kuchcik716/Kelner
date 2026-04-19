@@ -1,7 +1,7 @@
 {
   "name": "Zamówienia kelnerskie",
   "short_name": "Zamówienia",
-  "start_url": "./index.html",
+  "start_url": "."
   "display": "standalone",
   "background_color": "#f1f1f1",
   "theme_color": "#2d79d8",
