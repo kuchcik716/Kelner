@@ -1,7 +1,7 @@
 {
-  "name": "Zamówienia kelnerskie",
-  "short_name": "Zamówienia",
-  "start_url": "."
+  "name": "ZAMÓWIENIA KELNERSKIE",
+  "short_name": "KELNER",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f1f1f1",
   "theme_color": "#2d79d8",
@@ -9,8 +9,7 @@
     {
       "src": "icon-1024.png",
       "sizes": "1024x1024",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
   ]
 }
