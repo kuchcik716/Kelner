@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZAMÓWIENIA KELNERSKIE V14</title>
+  <title>ZAMÓWIENIA KELNERSKIE V15</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#2d79d8">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,22 +51,40 @@
     .dessert-row { border-left: 12px solid #5a9af0; }
     .kids-row { border-left: 12px solid #89b5f5; }
     .drink-row { border-left: 12px solid #7b3fd1; }
-    .order-name { font-size: 18px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; word-break: break-word; }
-    .qty-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+    .order-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; text-transform: uppercase; word-break: break-word; }
+    .order-note {
+      font-size: 14px;
+      font-weight: 700;
+      color: #c62828;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+    .qty-controls { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
     .qty-btn { min-width: 48px; height: 42px; border: 2px solid #111; background: #e8e8e8; font-size: 24px; font-weight: 700; cursor: pointer; }
-    .qty-value { min-width: 34px; text-align: center; font-size: 22px; font-weight: 700; }
+    .note-btn {
+      min-width: 72px;
+      height: 42px;
+      border: 2px solid #111;
+      background: #fff3cd;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
     .small-note { font-size: 15px; color: #444; margin-top: 8px; text-align: center; text-transform: uppercase; }
     @media (max-width: 700px) {
       .header { font-size: 24px; }
       .category-grid, .items-grid, .columns { grid-template-columns: 1fr; }
       .tile { min-height: 86px; font-size: 20px; }
       .back-btn, .send-btn, .clear-btn { font-size: 22px; }
+      .note-btn { min-width: 64px; font-size: 14px; }
     }
   </style>
 </head>
 <body>
   <div class="app">
-    <div class="header">ZAMÓWIENIA KELNERSKIE V14</div>
+    <div class="header">ZAMÓWIENIA KELNERSKIE V15</div>
 
     <div id="screen-main" class="screen active">
       <div class="table-box">
@@ -255,8 +273,9 @@
   </div>
 
 <script>
-const foodOrder = {};
-const drinkOrder = {};
+const foodOrder = [];
+const drinkOrder = [];
+
 const starterNames = ['KREWETKI NA MAŚLE','ZUPA ROSÓŁ','ZUPA DNIA','BRUSCHETTA Z WĘDZONYM PSTRĄGIEM','SAŁATKA GRECKA'];
 const mainNames = ['ŁOSOŚ','PSTRĄG','SCHAB','GULASZ BURGUNDZKI','RISOTTO GRZYBOWE','MANGO Z KREWETKAMI','STEK NA GORĄCYM KAMIENIU','BURGER WOŁOWY'];
 const dessertNames = ['FONDANT CZEKOLADOWY','LODY RZEMIEŚLNICZE','DESER CHEFA'];
@@ -276,6 +295,7 @@ function getFoodGroup(name) {
   if (kidsNames.includes(name)) return 'kids';
   return 'starter';
 }
+
 function getRowClass(name, type) {
   if (type === 'drink') return 'drink-row';
   const group = getFoodGroup(name);
@@ -285,80 +305,150 @@ function getRowClass(name, type) {
   if (group === 'kids') return 'kids-row';
   return '';
 }
+
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-function openCategory(category) { showScreen('screen-' + category); renderAll(); }
-function goMain() { showScreen('screen-main'); renderAll(); }
+
+function openCategory(category) {
+  showScreen('screen-' + category);
+  renderAll();
+}
+
+function goMain() {
+  showScreen('screen-main');
+  renderAll();
+}
+
+function createOrderItem(name) {
+  return {
+    id: Date.now().toString() + Math.random().toString(16).slice(2),
+    name: name,
+    note: ''
+  };
+}
+
 function addItem(name, type) {
   const target = type === 'food' ? foodOrder : drinkOrder;
-  target[name] = (target[name] || 0) + 1;
+  target.push(createOrderItem(name));
   document.getElementById('bar-status').textContent = 'BRAK WYSYŁKI';
   document.getElementById('bar-status').className = 'status-text';
   renderAll();
 }
-function changeItem(name, type, delta) {
+
+function findItemIndexById(items, id) {
+  return items.findIndex(item => item.id === id);
+}
+
+function changeItem(itemId, type, delta) {
   const target = type === 'food' ? foodOrder : drinkOrder;
-  if (!target[name]) return;
-  target[name] += delta;
-  if (target[name] <= 0) delete target[name];
+  const index = findItemIndexById(target, itemId);
+  if (index === -1) return;
+
+  if (delta === -1) {
+    target.splice(index, 1);
+  } else if (delta === 1) {
+    const original = target[index];
+    target.splice(index + 1, 0, createOrderItem(original.name));
+  }
+
   renderAll();
 }
-function clearFood() { Object.keys(foodOrder).forEach(key => delete foodOrder[key]); renderAll(); }
+
+function editNote(itemId, type) {
+  const target = type === 'food' ? foodOrder : drinkOrder;
+  const index = findItemIndexById(target, itemId);
+  if (index === -1) return;
+
+  const currentNote = target[index].note || '';
+  const note = prompt('WPISZ UWAGI DO POZYCJI', currentNote);
+
+  if (note === null) return;
+
+  target[index].note = note.trim().toUpperCase();
+  renderAll();
+}
+
+function clearFood() {
+  foodOrder.length = 0;
+  renderAll();
+}
+
 function clearBar() {
-  Object.keys(drinkOrder).forEach(key => delete drinkOrder[key]);
+  drinkOrder.length = 0;
   document.getElementById('bar-status').textContent = 'BRAK WYSYŁKI';
   document.getElementById('bar-status').className = 'status-text';
   renderAll();
 }
+
+function renderOrderList(items, type) {
+  if (items.length === 0) {
+    return '<div class="empty">BRAK POZYCJI</div>';
+  }
+
+  return items.map(item => `
+    <div class="order-row ${getRowClass(item.name, type)}">
+      <div class="order-name">${item.name}</div>
+      ${item.note ? `<div class="order-note">UWAGA: ${item.note}</div>` : ''}
+      <div class="qty-controls">
+        <button class="note-btn" data-action="note" data-id="${item.id}" data-type="${type}">OPIS</button>
+        <button class="qty-btn" data-action="change" data-id="${item.id}" data-type="${type}" data-delta="-1">-</button>
+        <button class="qty-btn" data-action="change" data-id="${item.id}" data-type="${type}" data-delta="1">+</button>
+      </div>
+    </div>
+  `).join('');
+}
+
 function renderOrderColumn(containerId, items, type) {
   const box = document.getElementById(containerId);
-  const keys = Object.keys(items);
-  if (keys.length === 0) { box.innerHTML = '<div class="empty">BRAK POZYCJI</div>'; return; }
-  box.innerHTML = keys.map(name => `
-    <div class="order-row ${getRowClass(name, type)}">
-      <div class="order-name">${name}</div>
-      <div class="qty-controls">
-        <button class="qty-btn" data-name="${encodeURIComponent(name)}" data-type="${type}" data-delta="-1">-</button>
-        <div class="qty-value">${items[name]}</div>
-        <button class="qty-btn" data-name="${encodeURIComponent(name)}" data-type="${type}" data-delta="1">+</button>
-      </div>
-    </div>`).join('');
+  box.innerHTML = renderOrderList(items, type);
 }
+
 function renderLiveList(containerId, names, source, type) {
   const box = document.getElementById(containerId);
-  const rows = names.filter(name => source[name] > 0).map(name => `
-    <div class="order-row ${getRowClass(name, type)}">
-      <div class="order-name">${name}</div>
-      <div class="qty-controls">
-        <button class="qty-btn" data-name="${encodeURIComponent(name)}" data-type="${type}" data-delta="-1">-</button>
-        <div class="qty-value">${source[name]}</div>
-        <button class="qty-btn" data-name="${encodeURIComponent(name)}" data-type="${type}" data-delta="1">+</button>
-      </div>
-    </div>`).join('');
-  box.innerHTML = rows || '<div class="empty">BRAK NABITYCH POZYCJI W TEJ SEKCJI</div>';
+  const filtered = source.filter(item => names.includes(item.name));
+  box.innerHTML = renderOrderList(filtered, type).replace('BRAK POZYCJI', 'BRAK NABITYCH POZYCJI W TEJ SEKCJI');
 }
+
 document.addEventListener('click', function(event) {
-  const btn = event.target.closest('.qty-btn');
-  if (!btn) return;
-  const name = decodeURIComponent(btn.dataset.name);
-  const type = btn.dataset.type;
-  const delta = Number(btn.dataset.delta);
-  changeItem(name, type, delta);
+  const noteBtn = event.target.closest('[data-action="note"]');
+  if (noteBtn) {
+    const itemId = noteBtn.dataset.id;
+    const type = noteBtn.dataset.type;
+    editNote(itemId, type);
+    return;
+  }
+
+  const changeBtn = event.target.closest('[data-action="change"]');
+  if (changeBtn) {
+    const itemId = changeBtn.dataset.id;
+    const type = changeBtn.dataset.type;
+    const delta = Number(changeBtn.dataset.delta);
+    changeItem(itemId, type, delta);
+  }
 });
+
 function sendBar() {
   const tableNumber = document.getElementById('table-number').value.trim();
-  const drinkKeys = Object.keys(drinkOrder);
   if (!tableNumber) { alert('PODAJ NR STOLIKA'); return; }
-  if (drinkKeys.length === 0) { alert('BRAK NAPOJÓW DO WYSYŁKI'); return; }
-  const payload = { table: tableNumber, items: { ...drinkOrder } };
+  if (drinkOrder.length === 0) { alert('BRAK NAPOJÓW DO WYSYŁKI'); return; }
+
+  const payload = {
+    table: tableNumber,
+    items: drinkOrder.map(item => ({
+      name: item.name,
+      note: item.note
+    }))
+  };
+
   console.log('WYŚLIJ BAR:', payload);
   document.getElementById('bar-status').textContent = 'WYSŁANE / WYDRUKOWANE';
   document.getElementById('bar-status').className = 'status-text status-ok';
   alert('WYSŁANE / WYDRUKOWANE');
   renderAll();
 }
+
 function renderAll() {
   renderOrderColumn('food-order', foodOrder, 'food');
   renderOrderColumn('drink-order', drinkOrder, 'drink');
@@ -374,6 +464,7 @@ function renderAll() {
   renderLiveList('live-wine', wineNames, drinkOrder, 'drink');
   renderLiveList('live-cocktails', cocktailNames, drinkOrder, 'drink');
 }
+
 renderAll();
 
 if ('serviceWorker' in navigator) {
