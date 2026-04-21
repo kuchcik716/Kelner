@@ -3,247 +3,180 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ZAMÓWIENIA KELNERSKIE V16</title>
+<title>Zamówienia kelnerskie V15</title>
 
 <style>
 body {
-    margin: 0;
-    font-family: Arial;
-    background: #111;
-    color: white;
+  margin: 0;
+  font-family: Arial;
+  background: #f1f5f9;
 }
 
-/* STOLIKI */
-.tables {
-    display: flex;
-    overflow-x: auto;
-    background: #000;
-    padding: 5px;
-}
-
-.table-btn {
-    margin: 5px;
-    padding: 10px 15px;
-    border-radius: 10px;
-    border: none;
-    background: #333;
-    color: white;
-    font-size: 14px;
-}
-
-.table-active {
-    background: orange;
-    color: black;
-}
-
-/* HEADER */
-.header {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background: #222;
-}
-
-.button {
-    padding: 15px;
-    font-size: 18px;
-    border: none;
-    border-radius: 10px;
-}
-
-/* LAYOUT */
 .container {
-    display: flex;
-    height: calc(100vh - 110px);
+  display: grid;
+  grid-template-columns: 1fr 1fr 0.8fr;
+  gap: 10px;
+  padding: 10px;
 }
 
-.column {
-    flex: 1;
-    padding: 10px;
+.panel {
+  background: white;
+  border-radius: 20px;
+  padding: 10px;
 }
 
-.food {
-    background: #0b3d91;
+.title {
+  font-size: 26px;
+  font-weight: 900;
+  margin-bottom: 10px;
 }
 
-.drinks {
-    background: #5a0b91;
-}
+.food { color: blue; }
+.drink { color: purple; }
 
-/* ITEM */
 .item {
-    background: #222;
-    margin: 10px 0;
-    padding: 15px;
-    border-radius: 10px;
-    font-size: 18px;
-    display: flex;
-    justify-content: space-between;
+  border: 2px solid #ddd;
+  border-radius: 15px;
+  padding: 10px;
+  margin-bottom: 8px;
 }
 
-.controls button {
-    margin-left: 5px;
-    font-size: 18px;
+.name {
+  font-size: 22px;
+  font-weight: 900;
 }
 
-/* PODSUMOWANIE */
-.summary-screen {
-    display: none;
-    padding: 20px;
+.controls {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+button {
+  width: 60px;
+  height: 60px;
+  font-size: 26px;
+  font-weight: 900;
+  border-radius: 12px;
+  border: none;
+}
+
+.plus.food { background: blue; color: white; }
+.plus.drink { background: purple; color: white; }
+.minus { background: #eee; }
+
+.qty {
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .summary-item {
-    font-size: 22px;
-    margin: 10px 0;
+  border-bottom: 2px solid #eee;
+  padding: 5px 0;
 }
+
 </style>
 </head>
 
 <body>
 
-<!-- STOLIKI -->
-<div class="tables" id="tables"></div>
+<div class="container">
 
-<!-- HEADER -->
-<div class="header">
-    <h2 id="tableTitle">STÓŁ 1</h2>
-    <button class="button" onclick="showSummary()">PODSUMOWANIE</button>
-</div>
+  <div class="panel">
+    <div class="title food">JEDZENIE</div>
+    <div id="food"></div>
+  </div>
 
-<!-- GŁÓWNY EKRAN -->
-<div class="container" id="mainScreen">
+  <div class="panel">
+    <div class="title drink">NAPOJE</div>
+    <div id="drink"></div>
+  </div>
 
-    <div class="column food">
-        <h3>JEDZENIE</h3>
-        <div id="foodList"></div>
-    </div>
+  <div class="panel">
+    <div class="title">PODSUMOWANIE</div>
+    <div id="summary"></div>
+    <button onclick="clearAll()">WYCZYŚĆ</button>
+  </div>
 
-    <div class="column drinks">
-        <h3>NAPOJE</h3>
-        <div id="drinkList"></div>
-    </div>
-
-</div>
-
-<!-- PODSUMOWANIE -->
-<div class="summary-screen" id="summaryScreen">
-    <h2>PODSUMOWANIE</h2>
-    <div id="summaryList"></div>
-    <button class="button" onclick="backToMain()">WRÓĆ</button>
 </div>
 
 <script>
-const foodItems = [
-"KREWETKI", "ROSÓŁ", "ZUPA DNIA", "BRUNETA",
-"ŁOSOŚ", "PSTRĄG", "SCHAB", "GULASZ",
-"RISOTTO", "MANGO KREWETKI",
-"FONDANT", "LODY", "DESER"
+
+const FOOD = [
+  "KREWETKI NA MAŚLE",
+  "ZUPA ROSÓŁ",
+  "ZUPA DNIA",
+  "ŁOSOŚ",
+  "SCHAB",
+  "RISOTTO"
 ];
 
-const drinkItems = [
-"KAWA CZARNA", "LATTE", "AFOGATO", "PROSECCO"
+const DRINK = [
+  "KAWA CZARNA",
+  "LATTE",
+  "PROSECCO"
 ];
 
-let currentTable = 1;
-let orders = {};
+let order = {};
 
-// inicjalizacja stolików
-function initTables() {
-    const container = document.getElementById("tables");
-    for (let i = 1; i <= 10; i++) {
-        const btn = document.createElement("button");
-        btn.innerText = "T" + i;
-        btn.className = "table-btn";
-        btn.onclick = () => switchTable(i);
-        container.appendChild(btn);
-    }
-    updateActiveTable();
+function addItem(name, type) {
+  order[name] = (order[name] || 0) + 1;
+  render();
 }
 
-function switchTable(nr) {
-    currentTable = nr;
-    if (!orders[currentTable]) {
-        orders[currentTable] = {};
-    }
-    updateActiveTable();
-    render();
+function removeItem(name) {
+  if (!order[name]) return;
+  order[name]--;
+  if (order[name] <= 0) delete order[name];
+  render();
 }
 
-function updateActiveTable() {
-    document.getElementById("tableTitle").innerText = "STÓŁ " + currentTable;
-    const buttons = document.querySelectorAll(".table-btn");
-    buttons.forEach((b, i) => {
-        b.classList.toggle("table-active", i === currentTable - 1);
-    });
+function clearAll() {
+  order = {};
+  render();
 }
 
-// dodawanie / odejmowanie
-function changeItem(name, delta) {
-    if (!orders[currentTable]) orders[currentTable] = {};
-    if (!orders[currentTable][name]) orders[currentTable][name] = 0;
+function renderMenu(list, container, type) {
+  container.innerHTML = "";
+  list.forEach(name => {
+    const qty = order[name] || 0;
 
-    orders[currentTable][name] += delta;
+    const div = document.createElement("div");
+    div.className = "item";
 
-    if (orders[currentTable][name] <= 0) {
-        delete orders[currentTable][name];
-    }
+    div.innerHTML = `
+      <div class="name">${name}</div>
+      <div class="controls">
+        <button class="minus" onclick="removeItem('${name}')">-</button>
+        <div class="qty">${qty}</div>
+        <button class="plus ${type}" onclick="addItem('${name}','${type}')">+</button>
+      </div>
+    `;
 
-    render();
+    container.appendChild(div);
+  });
 }
 
-// render list
+function renderSummary() {
+  const s = document.getElementById("summary");
+  s.innerHTML = "";
+
+  Object.keys(order).forEach(name => {
+    const div = document.createElement("div");
+    div.className = "summary-item";
+    div.innerText = name + " x" + order[name];
+    s.appendChild(div);
+  });
+}
+
 function render() {
-    renderList("foodList", foodItems);
-    renderList("drinkList", drinkItems);
+  renderMenu(FOOD, document.getElementById("food"), "food");
+  renderMenu(DRINK, document.getElementById("drink"), "drink");
+  renderSummary();
 }
 
-function renderList(id, items) {
-    const container = document.getElementById(id);
-    container.innerHTML = "";
+render();
 
-    items.forEach(item => {
-        const count = orders[currentTable]?.[item] || 0;
-
-        const div = document.createElement("div");
-        div.className = "item";
-        div.innerHTML = `
-            <span>${item}</span>
-            <div class="controls">
-                <button onclick="changeItem('${item}', -1)">-</button>
-                ${count}
-                <button onclick="changeItem('${item}', 1)">+</button>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// PODSUMOWANIE
-function showSummary() {
-    document.getElementById("mainScreen").style.display = "none";
-    document.getElementById("summaryScreen").style.display = "block";
-
-    const list = document.getElementById("summaryList");
-    list.innerHTML = "";
-
-    const tableOrder = orders[currentTable] || {};
-
-    for (let item in tableOrder) {
-        const div = document.createElement("div");
-        div.className = "summary-item";
-        div.innerText = tableOrder[item] + "x " + item;
-        list.appendChild(div);
-    }
-}
-
-function backToMain() {
-    document.getElementById("summaryScreen").style.display = "none";
-    document.getElementById("mainScreen").style.display = "flex";
-}
-
-// start
-initTables();
-switchTable(1);
 </script>
 
 </body>
