@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZAMÓWIENIA KELNERSKIE V18.1</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2d79d8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Zamówienia kelnerskie">
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f1f1f1; color: #111; }
+    .app { max-width: 1100px; margin: 0 auto; padding: 10px; }
+    .header { text-align: center; font-size: 28px; font-weight: 700; padding: 12px 8px 16px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    .table-box, .live-box, .column-box, .status-box, .active-table-box { background: white; border: 2px solid #222; padding: 12px; margin-bottom: 12px; }
+    .label { font-size: 18px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; }
+
+    .table-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .table-tile {
+      position: relative;
+      border: 2px solid #555;
+      background: #e8e8e8;
+      color: #111;
+      min-height: 48px;
+      padding: 6px 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1;
+      user-select: none;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .table-tile.active {
+      border: 3px solid #148a1a;
+      background: #f4faf4;
+    }
+
+    .table-tile.has-items {
+      background: #dddddd;
+    }
+
+    .table-tile.active.has-items {
+      background: #eef7ee;
+    }
+
+    .table-badge {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #d32f2f;
+      border: 1px solid #111;
+    }
+
+    .active-table-title {
+      font-size: 28px;
+      font-weight: 700;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .category-grid, .items-grid, .columns { display: grid; gap: 12px; }
+    .category-grid { grid-template-columns: repeat(2, 1fr); margin-bottom: 14px; }
+    .items-grid { grid-template-columns: repeat(2, 1fr); margin-bottom: 14px; }
+    .columns { grid-template-columns: 1fr 1fr; align-items: start; }
+
+    .tile {
+      border: 2px solid #111;
+      min-height: 96px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1.2;
+      user-select: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      color: #fff;
+    }
+
+    .main-food-color { background: #2d79d8; }
+    .starter-color { background: #1f5fbf; }
+    .main-color { background: #2d79d8; }
+    .dessert-color { background: #5a9af0; }
+    .kids-color { background: #89b5f5; color: #111; }
+    .drink-color { background: #7b3fd1; }
+
+    .back-btn, .send-btn, .clear-btn {
+      width: 100%;
+      border: 2px solid #111;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 700;
+      padding: 16px 10px;
+      text-align: center;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .back-btn { background: #148a1a; margin-bottom: 12px; }
+    .send-btn { background: #2e7d32; margin-top: 12px; }
+    .clear-btn { background: #58606b; margin-top: 12px; }
+
+    .section-title, .column-title, .live-title {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: center;
+      margin: 4px 0 10px;
+      text-transform: uppercase;
+    }
+
+    .empty, .status-text {
+      font-size: 18px;
+      color: #444;
+      padding: 8px 0;
+      text-transform: uppercase;
+    }
+
+    .status-ok { color: #148a1a; font-weight: 700; }
+    .status-error { color: #c62828; font-weight: 700; }
+
+    .order-row {
+      border: 1px solid #999;
+      padding: 8px;
+      margin-bottom: 8px;
+      background: #fafafa;
+    }
+
+    .starter-row { border-left: 12px solid #1f5fbf; }
+    .main-row { border-left: 12px solid #2d79d8; }
+    .dessert-row { border-left: 12px solid #5a9af0; }
+    .kids-row { border-left: 12px solid #89b5f5; }
+    .drink-row { border-left: 12px solid #7b3fd1; }
+
+    .order-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      word-break: break-word;
+    }
+
+    .variant-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .variant-row {
+      border-top: 1px dashed #bbb;
+      padding-top: 8px;
+    }
+
+    .variant-label {
+      font-size: 15px;
+      font-weight: 700;
+      color: #c62828;
+      text-transform: uppercase;
+      word-break: break-word;
+      margin-bottom: 6px;
+      white-space: pre-line;
+    }
+
+    .variant-label.standard {
+      color: #444;
+    }
+
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .qty-btn {
+      min-width: 48px;
+      height: 42px;
+      border: 2px solid #111;
+      background: #e8e8e8;
+      font-size: 24px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .note-btn {
+      min-width: 72px;
+      height: 42px;
+      border: 2px solid #111;
+      background: #fff3cd;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .small-note {
+      font-size: 15px;
+      color: #444;
+      margin-top: 8px;
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 700px) {
+      .header { font-size: 24px; }
+      .category-grid, .items-grid, .columns { grid-template-columns: 1fr; }
+      .tile { min-height: 86px; font-size: 20px; }
+      .back-btn, .send-btn, .clear-btn { font-size: 22px; }
+      .note-btn { min-width: 64px; font-size: 14px; }
+      .table-grid { grid-template-columns: repeat(5, 1fr); gap: 6px; }
+      .table-tile { min-height: 44px; font-size: 16px; padding: 4px 2px; }
+      .table-badge { width: 8px; height: 8px; top: 3px; right: 3px; }
+      .active-table-title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">ZAMÓWIENIA KELNERSKIE V18</div>
+
+    <div id="screen-main" class="screen active">
+      <div class="table-box">
+        <div class="label">WYBÓR STOLIKA ZAMÓWIENIA</div>
+        <div id="table-grid" class="table-grid"></div>
+      </div>
+
+      <div class="active-table-box">
+        <div id="active-table-title" class="active-table-title">STOLIK 1</div>
+      </div>
+
+      <div class="category-grid">
+        <div class="tile main-food-color" onclick="openCategory('starters')">PRZYSTAWKI</div>
+        <div class="tile main-food-color" onclick="openCategory('mains')">DANIA GŁÓWNE</div>
+        <div class="tile main-food-color" onclick="openCategory('desserts')">DESERY</div>
+        <div class="tile main-food-color" onclick="openCategory('kids')">DANIA DLA DZIECI</div>
+        <div class="tile drink-color" onclick="openCategory('drinks')">NAPOJE / BAR</div>
+      </div>
+
+      <div class="columns">
+        <div class="column-box">
+          <div class="column-title">JEDZENIE</div>
+          <div id="food-order"></div>
+          <button class="clear-btn" onclick="clearFood()">WYCZYŚĆ JEDZENIE</button>
+        </div>
+
+        <div class="column-box">
+          <div class="column-title">BAR</div>
+          <div id="drink-order"></div>
+          <button class="send-btn" onclick="sendBar()">WYŚLIJ BAR</button>
+          <button class="clear-btn" onclick="clearBar()">WYCZYŚĆ BAR</button>
+          <div class="small-note">TYLKO NAPOJE IDĄ DO WYSYŁKI</div>
+        </div>
+      </div>
+
+      <div class="status-box">
+        <div class="column-title">STATUS BARU</div>
+        <div id="bar-status" class="status-text">BRAK WYSYŁKI</div>
+      </div>
+    </div>
+
+    <div id="screen-starters" class="screen">
+      <div class="back-btn" onclick="goMain()">POWRÓT DO GŁÓWNEGO</div>
+      <div class="section-title">PRZYSTAWKI</div>
+      <div class="items-grid">
+        <div class="tile starter-color" onclick="addItem('KREWETKI NA MAŚLE', 'food')">KREWETKI NA MAŚLE</div>
+        <div class="tile starter-color" onclick="addItem('ZUPA ROSÓŁ', 'food')">ZUPA ROSÓŁ</div>
+        <div class="tile starter-color" onclick="addItem('ZUPA DNIA', 'food')">ZUPA DNIA</div>
+        <div class="tile starter-color" onclick="addItem('BRUSCHETTA Z WĘDZONYM PSTRĄGIEM', 'food')">BRUSCHETTA Z WĘDZONYM PSTRĄGIEM</div>
+        <div class="tile starter-color" onclick="addItem('SAŁATKA GRECKA', 'food')">SAŁATKA GRECKA</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-starters"></div></div>
+    </div>
+
+    <div id="screen-mains" class="screen">
+      <div class="back-btn" onclick="goMain()">POWRÓT DO GŁÓWNEGO</div>
+      <div class="section-title">DANIA GŁÓWNE</div>
+      <div class="items-grid">
+        <div class="tile main-color" onclick="addItem('ŁOSOŚ', 'food')">ŁOSOŚ</div>
+        <div class="tile main-color" onclick="addItem('PSTRĄG', 'food')">PSTRĄG</div>
+        <div class="tile main-color" onclick="addItem('SCHAB', 'food')">SCHAB</div>
+        <div class="tile main-color" onclick="addItem('GULASZ BURGUNDZKI', 'food')">GULASZ BURGUNDZKI</div>
+        <div class="tile main-color" onclick="addItem('RISOTTO GRZYBOWE', 'food')">RISOTTO GRZYBOWE</div>
+        <div class="tile main-color" onclick="addItem('MANGO Z KREWETKAMI', 'food')">MANGO Z KREWETKAMI</div>
+        <div class="tile main-color" onclick="addItem('STEK NA GORĄCYM KAMIENIU', 'food')">STEK NA GORĄCYM KAMIENIU</div>
+        <div class="tile main-color" onclick="addItem('BURGER WOŁOWY', 'food')">BURGER WOŁOWY</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-mains"></div></div>
+    </div>
+
+    <div id="screen-desserts" class="screen">
+      <div class="back-btn" onclick="goMain()">POWRÓT DO GŁÓWNEGO</div>
+      <div class="section-title">DESERY</div>
+      <div class="items-grid">
+        <div class="tile dessert-color" onclick="addItem('FONDANT CZEKOLADOWY', 'food')">FONDANT CZEKOLADOWY</div>
+        <div class="tile dessert-color" onclick="addItem('LODY RZEMIEŚLNICZE', 'food')">LODY RZEMIEŚLNICZE</div>
+        <div class="tile dessert-color" onclick="addItem('DESER CHEFA', 'food')">DESER CHEFA</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-desserts"></div></div>
+    </div>
+
+    <div id="screen-kids" class="screen">
+      <div class="back-btn" onclick="goMain()">POWRÓT DO GŁÓWNEGO</div>
+      <div class="section-title">DANIA DLA DZIECI</div>
+      <div class="items-grid">
+        <div class="tile kids-color" onclick="addItem('ZUPA DNIA DZIECI', 'food')">ZUPA DNIA</div>
+        <div class="tile kids-color" onclick="addItem('KOTLET DEVOLAY', 'food')">KOTLET DEVOLAY</div>
+        <div class="tile kids-color" onclick="addItem('NALEŚNIKI', 'food')">NALEŚNIKI</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-kids"></div></div>
+    </div>
+
+    <div id="screen-drinks" class="screen">
+      <div class="back-btn" onclick="goMain()">POWRÓT DO GŁÓWNEGO</div>
+      <div class="section-title">NAPOJE / BAR</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="openCategory('coffee')">KAWA</div>
+        <div class="tile drink-color" onclick="openCategory('tea')">HERBATY</div>
+        <div class="tile drink-color" onclick="openCategory('cold')">NAPOJE ZIMNE</div>
+        <div class="tile drink-color" onclick="openCategory('beer')">PIWA</div>
+        <div class="tile drink-color" onclick="openCategory('wine')">WINA</div>
+        <div class="tile drink-color" onclick="openCategory('cocktails')">KOKTAJLE ALKOHOLOWE</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-drinks"></div></div>
+    </div>
+
+    <div id="screen-coffee" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">KAWA</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('KAWA ESPRESSO', 'drink')">KAWA ESPRESSO</div>
+        <div class="tile drink-color" onclick="addItem('KAWA AMERICANO', 'drink')">KAWA AMERICANO</div>
+        <div class="tile drink-color" onclick="addItem('KAWA FLAT WHITE', 'drink')">KAWA FLAT WHITE</div>
+        <div class="tile drink-color" onclick="addItem('KAWA CAPPUCCINO', 'drink')">KAWA CAPPUCCINO</div>
+        <div class="tile drink-color" onclick="addItem('KAWA LATTE MACCHIATO', 'drink')">KAWA LATTE MACCHIATO</div>
+        <div class="tile drink-color" onclick="addItem('KAWA AFOGATO', 'drink')">KAWA AFOGATO</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-coffee"></div></div>
+    </div>
+
+    <div id="screen-tea" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">HERBATY I NAPARY</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('HERBATA EARL GREY', 'drink')">HERBATA EARL GREY</div>
+        <div class="tile drink-color" onclick="addItem('HERBATA ZIOŁOWA DOBRY HUMOR', 'drink')">HERBATA ZIOŁOWA DOBRY HUMOR</div>
+        <div class="tile drink-color" onclick="addItem('HERBATA ZIOŁOWA WIOSENNA', 'drink')">HERBATA ZIOŁOWA WIOSENNA</div>
+        <div class="tile drink-color" onclick="addItem('HERBATA ZIELONA Z MARAKUJĄ', 'drink')">HERBATA ZIELONA Z MARAKUJĄ</div>
+        <div class="tile drink-color" onclick="addItem('NAPAR IMBIROWY', 'drink')">NAPAR IMBIROWY</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-tea"></div></div>
+    </div>
+
+    <div id="screen-cold" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">NAPOJE ZIMNE</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('LEMONIADA', 'drink')">LEMONIADA</div>
+        <div class="tile drink-color" onclick="addItem('WODA MINERALNA GAZOWANA', 'drink')">WODA MINERALNA GAZOWANA</div>
+        <div class="tile drink-color" onclick="addItem('WODA MINERALNA NIEGAZOWANA', 'drink')">WODA MINERALNA NIEGAZOWANA</div>
+        <div class="tile drink-color" onclick="addItem('DZBANEK WODY', 'drink')">DZBANEK WODY</div>
+        <div class="tile drink-color" onclick="addItem('WODA 300 ML GAZOWANA', 'drink')">WODA 300 ML GAZOWANA</div>
+        <div class="tile drink-color" onclick="addItem('WODA 300 ML NIEGAZOWANA', 'drink')">WODA 300 ML NIEGAZOWANA</div>
+        <div class="tile drink-color" onclick="addItem('COCA COLA', 'drink')">COCA COLA</div>
+        <div class="tile drink-color" onclick="addItem('SPRITE', 'drink')">SPRITE</div>
+        <div class="tile drink-color" onclick="addItem('FANTA', 'drink')">FANTA</div>
+        <div class="tile drink-color" onclick="addItem('TYMBARK', 'drink')">TYMBARK</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-cold"></div></div>
+    </div>
+
+    <div id="screen-beer" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">PIWA</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('KOZEL LEŻAK 0.5L', 'drink')">KOZEL LEŻAK 0.5L</div>
+        <div class="tile drink-color" onclick="addItem('ŻATECKY ŚWIETLY 0.5L', 'drink')">ŻATECKY ŚWIETLY 0.5L</div>
+        <div class="tile drink-color" onclick="addItem('LECH PREMIUM 0.5L', 'drink')">LECH PREMIUM 0.5L</div>
+        <div class="tile drink-color" onclick="addItem('LECH FREE 0.33L', 'drink')">LECH FREE 0.33L</div>
+        <div class="tile drink-color" onclick="addItem('PIWO KSIĄŻĘCE ZŁOTE PSZENICZNE 0.5L', 'drink')">PIWO KSIĄŻĘCE ZŁOTE PSZENICZNE 0.5L</div>
+        <div class="tile drink-color" onclick="addItem('LECH FREE LIMONKA MIĘTA 0.33L', 'drink')">LECH FREE LIMONKA MIĘTA 0.33L</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-beer"></div></div>
+    </div>
+
+    <div id="screen-wine" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">WINA</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('MIONETTO PROSECCO 125ML', 'drink')">MIONETTO PROSECCO 125ML</div>
+        <div class="tile drink-color" onclick="addItem('INFINITY SENTIERI 125ML', 'drink')">INFINITY SENTIERI 125ML</div>
+        <div class="tile drink-color" onclick="addItem('INFINITY PRIMITIVO PUGLIA 125ML', 'drink')">INFINITY PRIMITIVO PUGLIA 125ML</div>
+        <div class="tile drink-color" onclick="addItem('INFINITY NEGROAMARO SALENTO 125ML', 'drink')">INFINITY NEGROAMARO SALENTO 125ML</div>
+        <div class="tile drink-color" onclick="addItem('JP CHENET 125ML', 'drink')">JP CHENET 125ML</div>
+        <div class="tile drink-color" onclick="addItem('AMARONE DELLA VALPOLICELLA - BUTELKA', 'drink')">AMARONE DELLA VALPOLICELLA - BUTELKA</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-wine"></div></div>
+    </div>
+
+    <div id="screen-cocktails" class="screen">
+      <div class="back-btn" onclick="openCategory('drinks')">POWRÓT DO NAPOJÓW</div>
+      <div class="section-title">KOKTAJLE ALKOHOLOWE</div>
+      <div class="items-grid">
+        <div class="tile drink-color" onclick="addItem('SOROPPINO', 'drink')">SOROPPINO</div>
+        <div class="tile drink-color" onclick="addItem('APEROL SPRITZ', 'drink')">APEROL SPRITZ</div>
+        <div class="tile drink-color" onclick="addItem('JACK DANIELS COCA COLA', 'drink')">JACK DANIELS COCA COLA</div>
+      </div>
+      <div class="live-box"><div class="live-title">LISTA NABITYCH POZYCJI</div><div id="live-cocktails"></div></div>
+    </div>
+  </div>
+
+  <script>
+    const TABLE_COUNT = 10;
+    const LOCAL_PRINT_SERVER = 'http://192.168.1.61:3000';
+    const IS_LOCAL_PRINT_PAGE = location.hostname === '192.168.1.61' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    const BAR_PRINT_URL = IS_LOCAL_PRINT_PAGE ? '/print' : LOCAL_PRINT_SERVER + '/print';
+
+    function createEmptyTableState() {
+      return {
+        food: [],
+        drink: [],
+        barStatusText: 'BRAK WYSYŁKI',
+        barStatusClass: 'status-text'
+      };
+    }
+
+    const tables = {};
+    for (let i = 1; i <= TABLE_COUNT; i++) {
+      tables[i] = createEmptyTableState();
+    }
+
+    let activeTable = 1;
+
+    const starterNames = ['KREWETKI NA MAŚLE','ZUPA ROSÓŁ','ZUPA DNIA','BRUSCHETTA Z WĘDZONYM PSTRĄGIEM','SAŁATKA GRECKA'];
+    const mainNames = ['ŁOSOŚ','PSTRĄG','SCHAB','GULASZ BURGUNDZKI','RISOTTO GRZYBOWE','MANGO Z KREWETKAMI','STEK NA GORĄCYM KAMIENIU','BURGER WOŁOWY'];
+    const dessertNames = ['FONDANT CZEKOLADOWY','LODY RZEMIEŚLNICZE','DESER CHEFA'];
+    const kidsNames = ['ZUPA DNIA DZIECI','KOTLET DEVOLAY','NALEŚNIKI'];
+    const coffeeNames = ['KAWA ESPRESSO','KAWA AMERICANO','KAWA FLAT WHITE','KAWA CAPPUCCINO','KAWA LATTE MACCHIATO','KAWA AFOGATO'];
+    const teaNames = ['HERBATA EARL GREY','HERBATA ZIOŁOWA DOBRY HUMOR','HERBATA ZIOŁOWA WIOSENNA','HERBATA ZIELONA Z MARAKUJĄ','NAPAR IMBIROWY'];
+    const coldNames = ['LEMONIADA','WODA MINERALNA GAZOWANA','WODA MINERALNA NIEGAZOWANA','DZBANEK WODY','WODA 300 ML GAZOWANA','WODA 300 ML NIEGAZOWANA','COCA COLA','SPRITE','FANTA','TYMBARK'];
+    const beerNames = ['KOZEL LEŻAK 0.5L','ŻATECKY ŚWIETLY 0.5L','LECH PREMIUM 0.5L','LECH FREE 0.33L','PIWO KSIĄŻĘCE ZŁOTE PSZENICZNE 0.5L','LECH FREE LIMONKA MIĘTA 0.33L'];
+    const wineNames = ['MIONETTO PROSECCO 125ML','INFINITY SENTIERI 125ML','INFINITY PRIMITIVO PUGLIA 125ML','INFINITY NEGROAMARO SALENTO 125ML','JP CHENET 125ML','AMARONE DELLA VALPOLICELLA - BUTELKA'];
+    const cocktailNames = ['SOROPPINO','APEROL SPRITZ','JACK DANIELS COCA COLA'];
+    const drinkNames = [...coffeeNames, ...teaNames, ...coldNames, ...beerNames, ...wineNames, ...cocktailNames];
+
+    function getCurrentTableState() {
+      return tables[activeTable];
+    }
+
+    function getCurrentItems(type) {
+      return getCurrentTableState()[type];
+    }
+
+    function setBarStatus(text, className) {
+      const state = getCurrentTableState();
+      state.barStatusText = text;
+      state.barStatusClass = className;
+      renderBarStatus();
+    }
+
+    function resetBarStatusForActiveTable() {
+      const state = getCurrentTableState();
+      state.barStatusText = 'BRAK WYSYŁKI';
+      state.barStatusClass = 'status-text';
+    }
+
+    function getFoodGroup(name) {
+      if (starterNames.includes(name)) return 'starter';
+      if (mainNames.includes(name)) return 'main';
+      if (dessertNames.includes(name)) return 'dessert';
+      if (kidsNames.includes(name)) return 'kids';
+      return 'starter';
+    }
+
+    function getRowClass(name, type) {
+      if (type === 'drink') return 'drink-row';
+      const group = getFoodGroup(name);
+      if (group === 'starter') return 'starter-row';
+      if (group === 'main') return 'main-row';
+      if (group === 'dessert') return 'dessert-row';
+      if (group === 'kids') return 'kids-row';
+      return '';
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function openCategory(category) {
+      showScreen('screen-' + category);
+      renderAll();
+    }
+
+    function goMain() {
+      showScreen('screen-main');
+      renderAll();
+    }
+
+    function selectTable(tableNumber) {
+      activeTable = tableNumber;
+      renderAll();
+    }
+
+    function createOrderItem(name, note = '') {
+      return {
+        id: Date.now().toString() + Math.random().toString(16).slice(2),
+        name: name,
+        note: note
+      };
+    }
+
+    function addItem(name, type, note = '') {
+      const target = getCurrentItems(type);
+      target.push(createOrderItem(name, note));
+      resetBarStatusForActiveTable();
+      renderAll();
+    }
+
+    function normalizeNote(note) {
+      return (note || '').trim().toUpperCase();
+    }
+
+    function findFirstVariantIndex(items, name, note) {
+      const normalized = normalizeNote(note);
+      return items.findIndex(item => item.name === name && normalizeNote(item.note) === normalized);
+    }
+
+    function changeGroupedItem(name, note, type, delta) {
+      const target = getCurrentItems(type);
+      const index = findFirstVariantIndex(target, name, note);
+      if (index === -1) return;
+
+      if (delta === -1) {
+        target.splice(index, 1);
+      } else if (delta === 1) {
+        const original = target[index];
+        target.push(createOrderItem(original.name, normalizeNote(original.note)));
+      }
+
+      resetBarStatusForActiveTable();
+      renderAll();
+    }
+
+    function editGroupedNote(name, note, type) {
+      const target = getCurrentItems(type);
+      const index = findFirstVariantIndex(target, name, note);
+      if (index === -1) return;
+
+      const currentNote = normalizeNote(target[index].note);
+      const noteLabel = currentNote || '';
+      const newNote = prompt('WPISZ UWAGI DO 1 SZTUKI Z TEJ GRUPY', noteLabel);
+
+      if (newNote === null) return;
+
+      target[index].note = normalizeNote(newNote);
+      resetBarStatusForActiveTable();
+      renderAll();
+    }
+
+    function clearFood() {
+      getCurrentTableState().food.length = 0;
+      renderAll();
+    }
+
+    function clearBar() {
+      getCurrentTableState().drink.length = 0;
+      resetBarStatusForActiveTable();
+      renderAll();
+    }
+
+    function groupItemsByNameAndNote(items) {
+      const nameMap = new Map();
+
+      items.forEach(item => {
+        const noteKey = normalizeNote(item.note);
+
+        if (!nameMap.has(item.name)) {
+          nameMap.set(item.name, {
+            name: item.name,
+            total: 0,
+            variants: new Map()
+          });
+        }
+
+        const nameGroup = nameMap.get(item.name);
+        nameGroup.total += 1;
+
+        if (!nameGroup.variants.has(noteKey)) {
+          nameGroup.variants.set(noteKey, {
+            note: noteKey,
+            count: 0
+          });
+        }
+
+        nameGroup.variants.get(noteKey).count += 1;
+      });
+
+      return Array.from(nameMap.values());
+    }
+
+    function buildBarPrintItems(items) {
+      const grouped = groupItemsByNameAndNote(items);
+
+      return grouped.map(group => {
+        const variants = Array.from(group.variants.values()).sort((a, b) => {
+          if (a.note === '' && b.note !== '') return -1;
+          if (a.note !== '' && b.note === '') return 1;
+          return a.note.localeCompare(b.note, 'pl');
+        });
+
+        const noteLines = variants
+          .filter(variant => variant.note !== '')
+          .map(variant => `${variant.count}X ${variant.note}`);
+
+        return {
+          name: `${group.name} X${group.total}`,
+          note: noteLines.join('\n')
+        };
+      });
+    }
+
+    function renderGroupedOrderList(items, type) {
+      if (items.length === 0) {
+        return '<div class="empty">BRAK POZYCJI</div>';
+      }
+
+      const grouped = groupItemsByNameAndNote(items);
+
+      return grouped.map(group => {
+        const variants = Array.from(group.variants.values()).sort((a, b) => {
+          if (a.note === '' && b.note !== '') return -1;
+          if (a.note !== '' && b.note === '') return 1;
+          return a.note.localeCompare(b.note, 'pl');
+        });
+
+        const variantsHtml = variants.map(variant => {
+          const isStandard = variant.note === '';
+          const labelText = isStandard
+            ? `${variant.count}X BEZ UWAG`
+            : `${variant.count}X ${variant.note}`;
+
+          return `
+            <div class="variant-row">
+              <div class="variant-label ${isStandard ? 'standard' : ''}">${labelText}</div>
+              <div class="qty-controls">
+                <button class="note-btn" data-action="note-group" data-name="${encodeURIComponent(group.name)}" data-note="${encodeURIComponent(variant.note)}" data-type="${type}">OPIS</button>
+                <button class="qty-btn" data-action="change-group" data-name="${encodeURIComponent(group.name)}" data-note="${encodeURIComponent(variant.note)}" data-type="${type}" data-delta="-1">-</button>
+                <button class="qty-btn" data-action="change-group" data-name="${encodeURIComponent(group.name)}" data-note="${encodeURIComponent(variant.note)}" data-type="${type}" data-delta="1">+</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="order-row ${getRowClass(group.name, type)}">
+            <div class="order-name">${group.name} X${group.total}</div>
+            <div class="variant-list">${variantsHtml}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderOrderColumn(containerId, items, type) {
+      const box = document.getElementById(containerId);
+      box.innerHTML = renderGroupedOrderList(items, type);
+    }
+
+    function renderLiveList(containerId, names, source, type) {
+      const box = document.getElementById(containerId);
+      const filtered = source.filter(item => names.includes(item.name));
+      box.innerHTML = renderGroupedOrderList(filtered, type).replace('BRAK POZYCJI', 'BRAK NABITYCH POZYCJI W TEJ SEKCJI');
+    }
+
+    function renderTableGrid() {
+      const grid = document.getElementById('table-grid');
+      let html = '';
+
+      for (let i = 1; i <= TABLE_COUNT; i++) {
+        const state = tables[i];
+        const totalItems = state.food.length + state.drink.length;
+        const classes = ['table-tile'];
+
+        if (i === activeTable) classes.push('active');
+        if (totalItems > 0) classes.push('has-items');
+
+        html += `
+          <div class="${classes.join(' ')}" onclick="selectTable(${i})">
+            ${i}
+            ${totalItems > 0 ? '<span class="table-badge"></span>' : ''}
+          </div>
+        `;
+      }
+
+      grid.innerHTML = html;
+    }
+
+    function renderBarStatus() {
+      const state = getCurrentTableState();
+      const box = document.getElementById('bar-status');
+      box.textContent = state.barStatusText;
+      box.className = state.barStatusClass;
+    }
+
+    function renderActiveTableTitle() {
+      document.getElementById('active-table-title').textContent = 'STOLIK ' + activeTable;
+    }
+
+    document.addEventListener('click', function(event) {
+      const noteBtn = event.target.closest('[data-action="note-group"]');
+      if (noteBtn) {
+        const name = decodeURIComponent(noteBtn.dataset.name);
+        const note = decodeURIComponent(noteBtn.dataset.note);
+        const type = noteBtn.dataset.type;
+        editGroupedNote(name, note, type);
+        return;
+      }
+
+      const changeBtn = event.target.closest('[data-action="change-group"]');
+      if (changeBtn) {
+        const name = decodeURIComponent(changeBtn.dataset.name);
+        const note = decodeURIComponent(changeBtn.dataset.note);
+        const type = changeBtn.dataset.type;
+        const delta = Number(changeBtn.dataset.delta);
+        changeGroupedItem(name, note, type, delta);
+      }
+    });
+
+    async function sendBar() {
+      const state = getCurrentTableState();
+
+      if (state.drink.length === 0) {
+        alert('BRAK NAPOJÓW DO WYSYŁKI');
+        return;
+      }
+
+      const payload = {
+        table: activeTable,
+        items: buildBarPrintItems(state.drink)
+      };
+
+      setBarStatus('WYSYŁANIE DO BARU...', 'status-text');
+
+      try {
+        const response = await fetch(BAR_PRINT_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+          throw new Error('BŁĄD HTTP ' + response.status);
+        }
+
+        state.barStatusText = 'WYSŁANE / WYDRUKOWANE';
+        state.barStatusClass = 'status-text status-ok';
+        alert('WYSŁANE / WYDRUKOWANE');
+      } catch (error) {
+        console.log('BŁĄD WYSYŁKI BAR:', error);
+        state.barStatusText = 'BŁĄD WYSYŁKI / BRAK DRUKU';
+        state.barStatusClass = 'status-text status-error';
+        alert('BŁĄD WYSYŁKI BAR - OTWÓRZ APLIKACJĘ Z ADRESU http://192.168.1.61:3000/ LUB SPRAWDŹ KOMPUTER / DRUKARKĘ');
+      }
+
+      renderAll();
+    }
+
+    function renderAll() {
+      const state = getCurrentTableState();
+
+      renderTableGrid();
+      renderActiveTableTitle();
+      renderBarStatus();
+
+      renderOrderColumn('food-order', state.food, 'food');
+      renderOrderColumn('drink-order', state.drink, 'drink');
+
+      renderLiveList('live-starters', starterNames, state.food, 'food');
+      renderLiveList('live-mains', mainNames, state.food, 'food');
+      renderLiveList('live-desserts', dessertNames, state.food, 'food');
+      renderLiveList('live-kids', kidsNames, state.food, 'food');
+      renderLiveList('live-drinks', drinkNames, state.drink, 'drink');
+      renderLiveList('live-coffee', coffeeNames, state.drink, 'drink');
+      renderLiveList('live-tea', teaNames, state.drink, 'drink');
+      renderLiveList('live-cold', coldNames, state.drink, 'drink');
+      renderLiveList('live-beer', beerNames, state.drink, 'drink');
+      renderLiveList('live-wine', wineNames, state.drink, 'drink');
+      renderLiveList('live-cocktails', cocktailNames, state.drink, 'drink');
+    }
+
+    renderAll();
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js');
+      });
+    }
+  </script>
+</body>
+</html>
